@@ -1,0 +1,27 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+env/
+ENV/
+
+# PyTorch/Hugging Face models & temp files
+*.pth
+*.pt
+*.onnx
+*.onnx.data
+models/
+.cache/
+.huggingface/
+
+# Environment Variables
+.env
+.env.local
+
+# General
+.DS_Store
+.idea/
+.vscode/

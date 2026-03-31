@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-white font-sans antialiased overflow-x-hidden;
+    background-image: 
+      radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 400px),
+      radial-gradient(circle at bottom left, rgba(245, 158, 11, 0.1), transparent 400px);
+    background-attachment: fixed;
+  }
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  @apply bg-surface/60 backdrop-blur-lg border border-white/10 shadow-xl;
+}
+
+/* Custom Scrollbar for a premium feel */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-surface border border-white/10 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary/50;
+}
