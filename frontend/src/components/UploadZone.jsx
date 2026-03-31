@@ -105,15 +105,31 @@ const UploadZone = ({ onUpload, isUploading }) => {
               exit={{ opacity: 0, scale: 0.95 }}
               className="absolute inset-0 w-full h-full z-20 flex flex-col"
             >
-              <div className="relative w-full h-full p-4 flex flex-col items-center justify-center pointer-events-none">
+              <div className="relative w-full h-full p-4 flex flex-col items-center justify-center pointer-events-none overflow-hidden rounded-xl">
                 <img 
                   src={previewUrl} 
                   alt="Preview" 
-                  className="max-h-[220px] max-w-full object-contain rounded-lg shadow-2xl z-10"
+                  className={`max-h-[220px] max-w-full object-contain rounded-lg shadow-2xl z-10 transition-all duration-700 ${isUploading ? 'opacity-50 grayscale contrast-150 brightness-75' : ''}`}
                 />
+                
+                {/* Cyber Laser Scan Animation */}
+                {isUploading && (
+                  <motion.div
+                    initial={{ top: '10%' }}
+                    animate={{ top: '90%' }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                      ease: "linear",
+                    }}
+                    className="absolute w-[80%] max-w-[400px] h-[3px] bg-primary z-20 shadow-[0_0_20px_4px_theme('colors.primary.DEFAULT')]"
+                  />
+                )}
+
                 <button 
                   onClick={clearSelection}
-                  className="pointer-events-auto absolute top-4 right-4 p-2 bg-black/50 hover:bg-danger/80 rounded-full backdrop-blur-md text-white transition-colors z-30"
+                  className={`pointer-events-auto absolute top-4 right-4 p-2 bg-black/50 hover:bg-danger/80 rounded-full backdrop-blur-md text-white transition-colors z-30 ${isUploading ? 'hidden' : ''}`}
                 >
                   <X size={20} />
                 </button>
