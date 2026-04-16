@@ -6,7 +6,7 @@ import { Camera, Hexagon } from 'lucide-react';
 import ParticlesBackground from './components/ParticlesBackground';
 import TerminalMonitor from './components/TerminalMonitor';
 
-const BACKEND_URL = 'http://192.168.0.103:8000';
+const BACKEND_URL = 'https://deepfake-image-detection-cffq.onrender.com';
 
 function App() {
   const [isUploading, setIsUploading] = useState(false);

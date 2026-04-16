@@ -3,10 +3,10 @@
   "appName": "DeepfakeImages",
   "webDir": "dist",
   "android": {
-    "allowMixedContent": true
+    "allowMixedContent": false
   },
   "server": {
-    "cleartext": true,
-    "androidScheme": "http"
+    "cleartext": false,
+    "androidScheme": "https"
   }
 }

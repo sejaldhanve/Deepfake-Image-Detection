@@ -3,7 +3,7 @@ import { Download, AlertCircle, CheckCircle, ShieldCheck, DownloadCloud, Chevron
 import { motion } from 'framer-motion';
 import { Capacitor } from '@capacitor/core';
 
-const BACKEND_URL = 'http://192.168.0.103:8000';
+const BACKEND_URL = 'https://deepfake-image-detection-cffq.onrender.com';
 
 const ResultDisplay = ({ result, fileUrl, fileName, onReset }) => {
   const isReal = result.prediction === "REAL";
