@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Download, AlertCircle, CheckCircle, ShieldCheck, DownloadCloud, ChevronLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Capacitor } from '@capacitor/core';
+
+const BACKEND_URL = 'http://192.168.0.103:8000';
 
 const ResultDisplay = ({ result, fileUrl, fileName, onReset }) => {
   const isReal = result.prediction === "REAL";
@@ -17,12 +20,11 @@ const ResultDisplay = ({ result, fileUrl, fileName, onReset }) => {
     setDownloading(true);
     try {
       const formData = new FormData();
-      // Need the original file from memory or fetch from the blob URL
       const response = await fetch(fileUrl);
       const blob = await response.blob();
       formData.append('file', new File([blob], fileName, { type: blob.type }));
       
-      const downloadResponse = await fetch(`http://localhost:8000/api/certificate?prediction=${result.prediction}&confidence=${result.confidence}`, {
+      const downloadResponse = await fetch(`${BACKEND_URL}/api/certificate?prediction=${result.prediction}&confidence=${result.confidence}`, {
         method: 'POST',
         body: formData,
       });
@@ -30,17 +32,48 @@ const ResultDisplay = ({ result, fileUrl, fileName, onReset }) => {
       if (!downloadResponse.ok) throw new Error("Failed to generate certificate");
 
       const pdfBlob = await downloadResponse.blob();
-      const url = window.URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `Deepfake_Certificate_${fileName}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
+
+      if (Capacitor.isNativePlatform()) {
+        // --- Mobile: save to device and open share sheet ---
+        const { Filesystem, Directory } = await import('@capacitor/filesystem');
+        const { Share } = await import('@capacitor/share');
+
+        // Convert blob to base64
+        const base64Data = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64 = reader.result.split(',')[1];
+            resolve(base64);
+          };
+          reader.readAsDataURL(pdfBlob);
+        });
+
+        const savedFile = await Filesystem.writeFile({
+          path: `Deepfake_Certificate_${fileName}.pdf`,
+          data: base64Data,
+          directory: Directory.Cache,
+        });
+
+        await Share.share({
+          title: 'Deepfake Analysis Certificate',
+          text: `Certificate for ${fileName}`,
+          url: savedFile.uri,
+          dialogTitle: 'Save or Share Certificate',
+        });
+      } else {
+        // --- Browser: standard download ---
+        const url = window.URL.createObjectURL(pdfBlob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `Deepfake_Certificate_${fileName}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }
     } catch (error) {
       console.error(error);
-      alert("Failed to download certificate");
+      alert("Failed to download certificate: " + error.message);
     } finally {
       setDownloading(false);
     }

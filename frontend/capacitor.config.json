@@ -1,0 +1,12 @@
+{
+  "appId": "com.deepfakeimages.app",
+  "appName": "DeepfakeImages",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": true
+  },
+  "server": {
+    "cleartext": true,
+    "androidScheme": "http"
+  }
+}

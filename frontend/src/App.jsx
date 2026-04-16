@@ -6,6 +6,8 @@ import { Camera, Hexagon } from 'lucide-react';
 import ParticlesBackground from './components/ParticlesBackground';
 import TerminalMonitor from './components/TerminalMonitor';
 
+const BACKEND_URL = 'http://192.168.0.103:8000';
+
 function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [result, setResult] = useState(null);
@@ -21,37 +23,32 @@ function App() {
     setFileData({ url: previewUrl, name: file.name });
     setLogs([]);
     
-    // Simulate initial forensic log loading
     addLog(`[SYS] Initializing Forensic Modules...`);
     setTimeout(() => addLog(`[IO] Reading file: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`), 300);
     setTimeout(() => addLog(`[EXIF] Extracting Exif metadata parameters...`), 800);
     setTimeout(() => addLog(`[SCAN] Initializing EfficientNet B0 analysis...`), 1500);
 
-    // Create FormData for the API request
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      const response = await axios.post('http://localhost:8000/api/detect', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const response = await axios.post(`${BACKEND_URL}/api/detect`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-      
-      // Simulate slight delay for dramatic effect if response is extremely fast
+
       setTimeout(() => {
-        addLog(`[API] Received response from model: ${response.data.label}`);
+        addLog(`[API] Received response from model: ${response.data.prediction}`);
         addLog(`[SYS] Analysis complete with ${response.data.confidence.toFixed(1)}% confidence.`);
         setResult(response.data);
         setIsUploading(false);
       }, 2500);
-      
+
     } catch (error) {
       console.error('Upload error:', error);
       setTimeout(() => {
         addLog(`[ERROR] Connection failed: ${error.message}`);
         addLog(`[SYS] Aborting operation.`);
-        alert(error.response?.data?.detail || 'An error occurred during analysis. Make sure the backend Server is running!');
+        alert(error.response?.data?.detail || error.message || 'An error occurred during analysis. Make sure the backend Server is running!');
         setIsUploading(false);
       }, 2500);
     }
