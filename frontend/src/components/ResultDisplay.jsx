@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Download, AlertCircle, CheckCircle, ShieldCheck, DownloadCloud, ChevronLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Capacitor } from '@capacitor/core';
+import axios from 'axios';
 
-const BACKEND_URL = 'https://deepfake-image-detection-cffq.onrender.com';
+const BACKEND_URL = 'http://192.168.0.103:8000';
 
-const ResultDisplay = ({ result, fileUrl, fileName, onReset }) => {
+const ResultDisplay = ({ result, fileUrl, fileName, fileBlob, onReset }) => {
   const isReal = result.prediction === "REAL";
   const confidence = result.confidence;
   const isHighConfidence = confidence > 85;
@@ -20,18 +21,24 @@ const ResultDisplay = ({ result, fileUrl, fileName, onReset }) => {
     setDownloading(true);
     try {
       const formData = new FormData();
-      const response = await fetch(fileUrl);
-      const blob = await response.blob();
-      formData.append('file', new File([blob], fileName, { type: blob.type }));
+      let uploadFile = fileBlob;
+      if (!uploadFile) {
+         const response = await fetch(fileUrl);
+         const blob = await response.blob();
+         uploadFile = new File([blob], fileName, { type: blob.type });
+      }
+      formData.append('file', uploadFile);
       
-      const downloadResponse = await fetch(`${BACKEND_URL}/api/certificate?prediction=${result.prediction}&confidence=${result.confidence}`, {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await axios.post(
+        `${BACKEND_URL}/api/certificate?prediction=${result.prediction}&confidence=${result.confidence}`,
+        formData,
+        {
+          responseType: 'blob',
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
 
-      if (!downloadResponse.ok) throw new Error("Failed to generate certificate");
-
-      const pdfBlob = await downloadResponse.blob();
+      const pdfBlob = response.data;
 
       if (Capacitor.isNativePlatform()) {
         // --- Mobile: save to device and open share sheet ---

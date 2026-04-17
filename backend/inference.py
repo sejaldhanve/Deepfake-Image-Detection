@@ -1,5 +1,6 @@
-import onnxruntime as ort
-import numpy as np
+import torch
+import torch.nn as nn
+from torchvision import models, transforms
 from PIL import Image
 import os
 import io
@@ -8,38 +9,37 @@ print("="*60)
 print("Loading Hybrid Ensemble Architecture (Neural + Forensics)...")
 print("="*60)
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "model_files", "models", "deepfake_detector.onnx")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "model_files", "models", "final_deepfake_detector.pth")
 IMG_SIZE = 128
+DEVICE = torch.device("cpu")
 
-ort_session = None
+teammate_model = None
 
 def load_models():
-    global ort_session
+    global teammate_model
     
-    if ort_session is None:
+    # 1. Load Teammate's PyTorch Model
+    if teammate_model is None:
         if os.path.exists(MODEL_PATH):
             try:
-                ort_session = ort.InferenceSession(MODEL_PATH)
-                print("Engine 1: ONNX Neural Model loaded successfully.")
+                teammate_model = models.efficientnet_b0(weights=None)
+                teammate_model.classifier[1] = nn.Linear(teammate_model.classifier[1].in_features, 2)
+                teammate_model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+                teammate_model = teammate_model.to(DEVICE)
+                teammate_model.eval()
+                print("Engine 1: Teammate PyTorch Neural Model loaded successfully.")
             except Exception as e:
-                print(f"Failed to load Engine 1 ONNX model: {e}")
+                print(f"Failed to load Engine 1 PyTorch model: {e}")
         else:
-            print(f"Model file not found at {MODEL_PATH}")
+            print(f"Teammate model file not found at {MODEL_PATH}")
                 
-    return ort_session is not None
+    return teammate_model is not None
 
-def preprocess_image(image):
-    """Replicate the PyTorch transform: Resize, ToTensor, Normalize"""
-    image = image.resize((IMG_SIZE, IMG_SIZE))
-    img_array = np.array(image).astype(np.float32) / 255.0  # ToTensor
-    img_array = (img_array - 0.5) / 0.5  # Normalize([0.5]*3, [0.5]*3)
-    img_array = np.transpose(img_array, (2, 0, 1))  # HWC -> CHW
-    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
-    return img_array
-
-def softmax(x):
-    e_x = np.exp(x - np.max(x))
-    return e_x / e_x.sum()
+transform = transforms.Compose([
+    transforms.Resize((IMG_SIZE, IMG_SIZE)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.5]*3, [0.5]*3),
+])
 
 def predict_image(image_bytes: bytes):
     if not load_models():
@@ -50,17 +50,15 @@ def predict_image(image_bytes: bytes):
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         width, height = image.size
         
-        # ====== ENGINE 1: Neural Model (ONNX) ======
-        input_tensor = preprocess_image(image)
-        input_name = ort_session.get_inputs()[0].name
-        output = ort_session.run(None, {input_name: input_tensor})
+        # ====== ENGINE 1: Teammate's Neural Model ======
+        input_tensor = transform(image).unsqueeze(0).to(DEVICE)
+        with torch.no_grad():
+            output = teammate_model(input_tensor)
+            probs = torch.nn.functional.softmax(output[0], dim=0)
+            confidence_tm, pred_idx = torch.max(probs, 0)
         
-        probs = softmax(output[0][0])
-        pred_idx = np.argmax(probs)
-        confidence_tm = probs[pred_idx]
-        
-        pred_tm = "FAKE" if pred_idx == 0 else "REAL"
-        conf_tm = float(confidence_tm) * 100
+        pred_tm = "FAKE" if pred_idx.item() == 0 else "REAL"
+        conf_tm = confidence_tm.item() * 100
 
         # ====== ENSEMBLE DECISION LOGIC ======
         
@@ -91,4 +89,3 @@ def predict_image(image_bytes: bytes):
         
     except Exception as e:
         return {"error": str(e)}
-

@@ -6,12 +6,12 @@ import { Camera, Hexagon } from 'lucide-react';
 import ParticlesBackground from './components/ParticlesBackground';
 import TerminalMonitor from './components/TerminalMonitor';
 
-const BACKEND_URL = 'https://deepfake-image-detection-cffq.onrender.com';
+const BACKEND_URL = 'http://192.168.0.103:8000';
 
 function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [result, setResult] = useState(null);
-  const [fileData, setFileData] = useState({ url: null, name: null });
+  const [fileData, setFileData] = useState({ url: null, name: null, file: null });
   const [logs, setLogs] = useState([]);
 
   const addLog = (msg) => {
@@ -20,7 +20,7 @@ function App() {
 
   const handleUpload = async (file, previewUrl) => {
     setIsUploading(true);
-    setFileData({ url: previewUrl, name: file.name });
+    setFileData({ url: previewUrl, name: file.name, file: file });
     setLogs([]);
     
     addLog(`[SYS] Initializing Forensic Modules...`);
@@ -56,7 +56,7 @@ function App() {
 
   const handleReset = () => {
     setResult(null);
-    setFileData({ url: null, name: null });
+    setFileData({ url: null, name: null, file: null });
     setLogs([]);
   };
 
@@ -95,6 +95,7 @@ function App() {
                  result={result} 
                  fileUrl={fileData.url} 
                  fileName={fileData.name} 
+                 fileBlob={fileData.file}
                  onReset={handleReset} 
                />
             )}
